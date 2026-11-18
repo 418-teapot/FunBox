@@ -1,0 +1,51 @@
+package build
+
+import mill.*, scalalib.*
+import mill.scalalib.scalafmt.ScalafmtModule
+
+object funbox extends ScalaModule with ScalafmtModule {
+  def scalaVersion = "2.13.18"
+
+  private val strictScalacOptions = Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Xlint",
+    "-Werror"
+  )
+
+  def scalacOptions = strictScalacOptions
+
+  def mvnDeps = Seq(
+    mvn"org.chipsalliance::chisel:7.16.0"
+  )
+
+  def scalacPluginMvnDeps = Seq(
+    mvn"org.chipsalliance:::chisel-plugin:7.16.0"
+  )
+
+  def verilog = Task {
+    val javaExe = os.Path(System.getProperty("java.home")) / "bin" / "java"
+    val classpath =
+      runClasspath().map(_.path).mkString(java.io.File.pathSeparator)
+
+    os.makeDir.all(Task.dest)
+    os.proc(
+      javaExe,
+      "-cp",
+      classpath,
+      "funbox.FunBoxMain",
+      Task.dest.toString
+    ).call()
+
+    PathRef(Task.dest)
+  }
+
+  object test extends ScalaTests with TestModule.ScalaTest with ScalafmtModule {
+    def scalacOptions = strictScalacOptions
+
+    def mvnDeps = Seq(
+      mvn"org.scalatest::scalatest:3.2.20"
+    )
+  }
+}

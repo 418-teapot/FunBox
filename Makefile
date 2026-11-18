@@ -1,0 +1,29 @@
+ifeq ($(shell uname -s),Darwin)
+COURSIER_ROOT ?= $(HOME)/Library/Caches/Coursier
+else
+COURSIER_ROOT ?= $(or $(XDG_CACHE_HOME),$(HOME)/.cache)/coursier
+endif
+
+.PHONY: all verilog test format check clean expunge
+
+all: check verilog test
+
+verilog:
+	mill funbox.verilog
+
+test:
+	mill funbox.test
+
+format:
+	mill funbox.reformat
+	mill funbox.test.reformat
+
+check:
+	mill funbox.checkFormat
+	mill funbox.test.checkFormat
+
+clean:
+	mill clean
+
+expunge: clean
+	rm -rf -- "$(COURSIER_ROOT)"
