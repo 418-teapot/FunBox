@@ -4,14 +4,28 @@ import chisel3._
 import circt.stage.ChiselStage
 
 class FunBoxIO extends Bundle {
-  val out = Output(UInt(8.W))
+  val clockFrequencyHz = Input(UInt(32.W))
+  val led = Output(Bool())
 }
 
-/** A minimal synthesizable circuit: drive an 8-bit output with the value 42. */
 class FunBox extends Module {
   val io = IO(new FunBoxIO)
 
-  io.out := 42.U
+  private val halfPeriod = io.clockFrequencyHz >> 1
+
+  private val counter = RegInit(0.U(io.clockFrequencyHz.getWidth.W))
+  private val ledReg = RegInit(false.B)
+
+  private val nextCounter = counter + 1.U
+
+  when(nextCounter === halfPeriod) {
+    counter := 0.U
+    ledReg := !ledReg
+  }.otherwise {
+    counter := nextCounter
+  }
+
+  io.led := ledReg
 }
 
 object FunBoxMain {
@@ -24,7 +38,6 @@ object FunBoxMain {
       args = Array("--target-dir", targetDir)
     )
 
-    println("FunBox: Chisel is working.")
     println(s"Verilog written to $targetDir/FunBox.sv")
   }
 }

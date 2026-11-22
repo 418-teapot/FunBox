@@ -27,3 +27,23 @@ clean:
 
 expunge: clean
 	rm -rf -- "$(COURSIER_ROOT)"
+
+BOARD_TARGETS := synth pnr bitstream program
+
+ifneq ($(filter $(BOARD_TARGETS),$(MAKECMDGOALS)),)
+
+  ifeq ($(strip $(BOARD)),)
+    $(error BOARD required, e.g. make bitstream BOARD=tang-primer-25k)
+  endif
+
+  ifeq ($(wildcard boards/$(BOARD)/board.mk),)
+    $(error unknown BOARD '$(BOARD)', available: $(notdir $(wildcard boards/*)))
+  endif
+
+  .PHONY: $(BOARD_TARGETS)
+
+$(BOARD_TARGETS):
+	mill funbox.verilog
+	$(MAKE) -f scripts/fpga/flow.mk $@ BOARD=$(BOARD)
+
+endif
