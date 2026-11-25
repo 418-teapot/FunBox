@@ -1,1 +1,8 @@
+# Build artifacts
 /out/
+
+# Python environments
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/

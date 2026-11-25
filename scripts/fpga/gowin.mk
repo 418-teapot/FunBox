@@ -3,8 +3,14 @@ PNR_OUTPUTS := $(FPGA_DIR)/pnr.json $(FPGA_DIR)/report.json $(FPGA_DIR)/pnr.log
 .PHONY: synth pnr bitstream program
 
 synth: $(FPGA_DIR)/synth.json
-pnr: $(PNR_OUTPUTS)
 bitstream: $(FPGA_DIR)/bitstream.fs
+
+pnr: $(PNR_OUTPUTS)
+	uv run python scripts/pnr_report.py \
+		--board '$(BOARD)' \
+		--device '$(GOWIN_DEVICE)' \
+		--report $(FPGA_DIR)/report.json \
+		--log $(FPGA_DIR)/pnr.log
 
 program: $(FPGA_DIR)/bitstream.fs
 	openFPGALoader -b $(OPENFPGA_BOARD) $<
