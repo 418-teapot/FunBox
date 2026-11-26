@@ -72,7 +72,7 @@ Dock 板载一个由 FPGA J16 驱动的 WS2812 RGB LED。Sipeed Wiki 中的 LED�
 
 ## 按键
 
-Dock 提供三个用户按键和一个 reconfigure 按键。
+Dock 提供三个用户按键、一个 reconfigure 按键和一个电源按键。
 
 | 按键 | 原理图位号 | 引脚 | 说明 |
 |---|---|---|---|
@@ -81,13 +81,15 @@ Dock 提供三个用户按键和一个 reconfigure 按键。
 | KEY.2 / USER_BUTTON2 | S1 | Y12 | 用户按键，网络名 `EX_KEY.2` |
 | RECONFIG | SW7 | N12 | 专用 `BANK10_N12_RECONFIG`，不是普通用户 IO |
 
+> **注意：** 板上另有丝印 `PWR` 的电源按键，长按约 2 秒才使能主电源。未使能时板载调试器不上电，其 USB 端口不枚举，无法下载比特流。
+
 三个用户按键在 138K 上均使用 LVCMOS33。按键另一端接地，Dock 没有外部上拉，因此应配置 `PULL_MODE=UP`。空闲状态为高电平，按下状态为低电平。RECONFIG 在核心板上已有上拉。
 
 > **注意：** SOM 的 F4 连接 CPU_RESET，官方 DDR 示例将其约束为 LVCMOS15、1.5 V。它不是上述 Dock 用户按键，也不能套用三个用户键的 3.3 V 约束。
 
 ## 调试串口
 
-Dock 板载 BL616 调试器，提供 JTAG 和 UART，二者共用丝印为 DEBUG-USB2 的 USB-C 接口。使用 UART 时 JTAG 功能不可用；串口占用导致下载失败时，可重新插拔 USB 数据线。
+Dock 板载 BL616 调试器，提供 JTAG 和 UART，二者共用丝印为 DEBUG-USB2 的 USB-C 接口。使用 UART 时 JTAG 功能不可用；串口占用导致下载失败时，可重新插拔 USB 数据线。下载前需先长按 `PWR` 约 2 秒使能主电源，否则调试器不上电、USB 不枚举。
 
 | 方向 | 引脚 | 适用版本 | 说明 |
 |---|---|---|---|
