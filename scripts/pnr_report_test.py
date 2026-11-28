@@ -535,6 +535,52 @@ class CliTests(unittest.TestCase):
             self.assertIn("8 segments — 0 slowest shown", zero_output)
             self.assertNotIn("core.n1", zero_output)
 
+    def run_gate_case(self, directory, report, log_text):
+        report_path = Path(directory) / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+        args = ["--report", str(report_path)]
+        if log_text is not None:
+            log_path = Path(directory) / "pnr.log"
+            log_path.write_text(log_text, encoding="utf-8")
+            args += ["--log", str(log_path)]
+        return self.run_cli(*args)
+
+    def test_timing_failure_exits_one_after_rendering(self):
+        report = report_dict()
+        report["fmax"]["core.clock"]["achieved"] = 40
+        with tempfile.TemporaryDirectory() as directory:
+            code, stdout, stderr = self.run_gate_case(
+                directory, report, SAMPLE_LOG
+            )
+
+            self.assertEqual(code, 1, stderr)
+            self.assertIn("FAIL", line_with("Timing status", stdout))
+            self.assertIn("error:", stderr)
+
+    def test_pnr_failure_exits_one_after_rendering(self):
+        log = "ERROR: broken\n0 warnings, 1 error\n"
+        with tempfile.TemporaryDirectory() as directory:
+            code, stdout, stderr = self.run_gate_case(
+                directory, report_dict(), log
+            )
+
+            self.assertEqual(code, 1, stderr)
+            self.assertIn("FAILED", line_with("P&R status", stdout))
+            self.assertIn("error:", stderr)
+
+    def test_unknown_status_exits_one_after_rendering(self):
+        cases = (
+            ("missing log", report_dict(), None),
+            ("no clock", {"utilization": {}}, SAMPLE_LOG),
+        )
+        for name, report, log_text in cases:
+            with self.subTest(case=name), tempfile.TemporaryDirectory() as d:
+                code, stdout, stderr = self.run_gate_case(d, report, log_text)
+
+                self.assertEqual(code, 1, stderr)
+                self.assertIn("UNKNOWN", stdout)
+                self.assertIn("error:", stderr)
+
     def test_missing_report_is_a_clean_error(self):
         code, stdout, stderr = self.run_cli(
             "--report", "/nonexistent/report.json"

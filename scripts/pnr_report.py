@@ -1,4 +1,4 @@
-"""Render nextpnr's report.json and pnr.log as a terminal summary."""
+"""Render nextpnr's P&R report; exit 1 unless P&R and timing pass."""
 
 from __future__ import annotations
 
@@ -636,6 +636,15 @@ def _read_report(path: Path) -> Mapping[str, Any]:
     return data
 
 
+def gate_error(snapshot: ReportSnapshot) -> str | None:
+    problems = []
+    if snapshot.pnr_status != "SUCCESS":
+        problems.append(f"P&R {snapshot.pnr_status}")
+    if snapshot.timing_status != "PASS":
+        problems.append(f"timing {snapshot.timing_status}")
+    return ", ".join(problems) or None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     report_path = Path(args.report)
@@ -665,6 +674,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         include_all_resources=args.all_resources,
         max_segments=args.max_segments,
     )
+    error = gate_error(snapshot)
+    if error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
     return 0
 
 

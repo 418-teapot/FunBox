@@ -1,7 +1,6 @@
-# Build artifacts
 /out/
-
-# Python environments
+/.bsp/
+/.metals/
 .venv/
 __pycache__/
 *.py[cod]

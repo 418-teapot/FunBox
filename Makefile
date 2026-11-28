@@ -4,46 +4,37 @@ else
 COURSIER_ROOT ?= $(or $(XDG_CACHE_HOME),$(HOME)/.cache)/coursier
 endif
 
-.PHONY: all verilog test format check clean expunge
+FLOWS := funbox rust fpga tools
 
-all: check verilog test
+FPGA_TOOL_TARGETS := fpga fpga-synth fpga-pnr fpga-bitstream \
+	fpga-program fpga-check
 
-verilog:
-	mill funbox.verilog
+AVAILABLE_BOARDS := $(notdir $(wildcard boards/*))
 
-test:
-	mill funbox.test
+.DEFAULT_GOAL := all
 
-format:
-	mill funbox.reformat
-	mill funbox.test.reformat
+.PHONY: all build test check format clean expunge
 
-check:
-	mill funbox.checkFormat
-	mill funbox.test.checkFormat
-
-clean:
-	mill clean
+all: check build test
+build: funbox rust $(if $(BOARD),fpga)
+test: funbox-test rust-test tools-test
+check: funbox-check rust-check tools-check $(if $(BOARD),fpga-check)
+format: funbox-format rust-format tools-format
+clean: funbox-clean rust-clean fpga-clean
 
 expunge: clean
 	rm -rf -- "$(COURSIER_ROOT)"
 
-BOARD_TARGETS := synth pnr bitstream program
-
-ifneq ($(filter $(BOARD_TARGETS),$(MAKECMDGOALS)),)
-
-  ifeq ($(strip $(BOARD)),)
-    $(error BOARD required, e.g. make bitstream BOARD=tang-primer-25k)
-  endif
-
-  ifeq ($(wildcard boards/$(BOARD)/board.mk),)
-    $(error unknown BOARD '$(BOARD)', available: $(notdir $(wildcard boards/*)))
-  endif
-
-  .PHONY: $(BOARD_TARGETS)
-
-$(BOARD_TARGETS):
-	mill funbox.verilog
-	$(MAKE) -f scripts/fpga/flow.mk $@ BOARD=$(BOARD)
-
+ifneq ($(filter $(FPGA_TOOL_TARGETS),$(MAKECMDGOALS)),)
+ifeq ($(strip $(BOARD)),)
+$(error BOARD required, e.g. make fpga-bitstream BOARD=tang-primer-25k)
 endif
+endif
+
+ifneq ($(strip $(BOARD)),)
+ifeq ($(wildcard boards/$(BOARD)/board.mk),)
+$(error unknown BOARD '$(BOARD)', available: $(AVAILABLE_BOARDS))
+endif
+endif
+
+include $(addsuffix /flow.mk,$(addprefix scripts/,$(FLOWS)))

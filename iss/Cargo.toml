@@ -1,0 +1,10 @@
+[package]
+name = "iss"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Instruction set simulator for the FunBox core"
+publish = false
+
+[lints]
+workspace = true

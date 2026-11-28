@@ -1,0 +1,29 @@
+[workspace]
+members = ["iss"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+
+[workspace.lints.rust]
+missing_docs = "forbid"
+unsafe_code = "forbid"
+future_incompatible = "forbid"
+nonstandard_style = "forbid"
+rust_2018_idioms = "forbid"
+rust_2024_compatibility = "forbid"
+unused = "forbid"
+warnings = "forbid"
+
+[workspace.lints.clippy]
+all = "forbid"
+cargo = "forbid"
+nursery = "forbid"
+pedantic = "forbid"
+dbg_macro = "forbid"
+expect_used = "forbid"
+panic = "forbid"
+todo = "forbid"
+unimplemented = "forbid"
+unwrap_used = "forbid"

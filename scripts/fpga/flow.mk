@@ -1,6 +1,21 @@
-BOARD_DIR := boards/$(BOARD)
-include $(BOARD_DIR)/board.mk
+FPGA_PYTHON ?= uv run python
 
-FPGA_DIR := out/fpga/$(BOARD)
+.PHONY: fpga-clean
 
-include scripts/fpga/$(FLOW).mk
+fpga-clean:
+	rm -rf -- out/fpga
+
+ifneq ($(strip $(BOARD)),)
+
+include boards/$(BOARD)/board.mk
+
+FPGA_BOARD_DIR := boards/$(BOARD)
+FPGA_OUT_DIR := out/fpga/$(BOARD)
+
+.PHONY: fpga-check
+
+fpga-check: fpga-pnr
+
+include scripts/fpga/$(FPGA_FLOW).mk
+
+endif

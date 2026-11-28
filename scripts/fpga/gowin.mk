@@ -1,33 +1,45 @@
-PNR_OUTPUTS := $(FPGA_DIR)/pnr.json $(FPGA_DIR)/report.json $(FPGA_DIR)/pnr.log
+FPGA_RTL := $(FUNBOX_RTL)
+FPGA_PNR_OUTPUTS := $(FPGA_OUT_DIR)/pnr.json \
+	$(FPGA_OUT_DIR)/report.json \
+	$(FPGA_OUT_DIR)/pnr.log
 
-.PHONY: synth pnr bitstream program
+FPGA_YOSYS_SCRIPT = read_verilog -sv -DSYNTHESIS \
+	-DCLOCK_HZ=$(FPGA_CLOCK_HZ) $(FPGA_RTL) $(FPGA_BOARD_DIR)/top.sv; \
+	synth_gowin -top Top -json $@
 
-synth: $(FPGA_DIR)/synth.json
-bitstream: $(FPGA_DIR)/bitstream.fs
+.PHONY: fpga fpga-synth fpga-pnr fpga-bitstream fpga-program
 
-pnr: $(PNR_OUTPUTS)
-	uv run python scripts/pnr_report.py \
+fpga: fpga-bitstream
+
+fpga-synth: $(FPGA_OUT_DIR)/synth.json
+
+fpga-pnr: $(FPGA_PNR_OUTPUTS)
+	$(FPGA_PYTHON) scripts/pnr_report.py \
 		--board '$(BOARD)' \
 		--device '$(GOWIN_DEVICE)' \
-		--report $(FPGA_DIR)/report.json \
-		--log $(FPGA_DIR)/pnr.log
+		--report $(FPGA_OUT_DIR)/report.json \
+		--log $(FPGA_OUT_DIR)/pnr.log
 
-program: $(FPGA_DIR)/bitstream.fs
+fpga-bitstream: $(FPGA_OUT_DIR)/bitstream.fs
+
+fpga-program: $(FPGA_OUT_DIR)/bitstream.fs
 	openFPGALoader -b $(OPENFPGA_BOARD) $<
 
-$(FPGA_DIR)/synth.json: out/funbox/verilog.dest/FunBox.sv $(BOARD_DIR)/top.sv $(BOARD_DIR)/board.mk
+$(FPGA_OUT_DIR)/synth.json: $(FPGA_RTL) \
+	$(FPGA_BOARD_DIR)/top.sv $(FPGA_BOARD_DIR)/board.mk
 	mkdir -p $(@D)
-	yosys -p 'read_verilog -sv -DSYNTHESIS -DCLOCK_HZ=$(CLOCK_HZ) out/funbox/verilog.dest/FunBox.sv $(BOARD_DIR)/top.sv; synth_gowin -top Top -json $@'
+	yosys -p '$(FPGA_YOSYS_SCRIPT)'
 
-$(PNR_OUTPUTS) &: $(FPGA_DIR)/synth.json $(BOARD_DIR)/pins.cst
+$(FPGA_PNR_OUTPUTS) &: $(FPGA_OUT_DIR)/synth.json $(FPGA_BOARD_DIR)/pins.cst
 	nextpnr-himbaechel --device '$(GOWIN_DEVICE)' --json $< \
 		--quiet \
-		--vopt cst=$(BOARD_DIR)/pins.cst \
-		--freq $(shell expr $(CLOCK_HZ) / 1000000) \
-		--report $(FPGA_DIR)/report.json \
+		--vopt cst=$(FPGA_BOARD_DIR)/pins.cst \
+		--freq $(shell expr $(FPGA_CLOCK_HZ) / 1000000) \
+		--report $(FPGA_OUT_DIR)/report.json \
 		--detailed-timing-report \
-		--log $(FPGA_DIR)/pnr.log \
-		--write $(FPGA_DIR)/pnr.json
+		--log $(FPGA_OUT_DIR)/pnr.log \
+		--write $(FPGA_OUT_DIR)/pnr.json
 
-$(FPGA_DIR)/bitstream.fs: $(PNR_OUTPUTS)
+# Order-only: run the timing gate, but ignore output timestamps.
+$(FPGA_OUT_DIR)/bitstream.fs: $(FPGA_PNR_OUTPUTS) | fpga-pnr
 	gowin_pack -d $(GOWIN_PACK_DEVICE) -o $@ $<
