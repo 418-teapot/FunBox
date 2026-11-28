@@ -1,19 +1,20 @@
 //! Instruction set simulator.
 
+pub mod execute;
+pub mod isa;
 pub mod regs;
 
 // Test builds inject a `dead_code` allowance rejected by `forbid(unused)`.
 #[cfg(not(test))]
-fn main() -> std::process::ExitCode {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os();
     let _executable = args.next();
 
     if args.next().is_some() {
-        eprintln!("usage: iss");
-        eprintln!("iss currently accepts no arguments");
-
-        return std::process::ExitCode::FAILURE;
+        return Err("iss takes no arguments; usage: iss".into());
     }
 
-    std::process::ExitCode::SUCCESS
+    isa::Isa::load()?;
+
+    Ok(())
 }

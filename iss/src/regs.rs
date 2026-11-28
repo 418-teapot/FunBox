@@ -11,18 +11,18 @@ pub struct Regs {
     slots: [u64; COUNT],
 }
 
-impl Default for Regs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Regs {
-    /// Creates a register file in its reset state.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self { slots: [0; COUNT] }
-    }
+    /// Width of a register index in bits, derived from [`COUNT`].
+    pub const INDEX_BITS: u32 = {
+        assert!(COUNT.is_power_of_two());
+
+        COUNT.ilog2()
+    };
+
+    /// Architectural reset state: every slot holds zero.
+    ///
+    /// This is not a configurable default; the core always resets to it.
+    pub const RESET: Self = Self { slots: [0; COUNT] };
 
     /// # Panics
     ///
@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn every_register_starts_at_zero() {
-        let regs = Regs::new();
+        let regs = Regs::RESET;
 
         for index in 0..COUNT {
             assert_eq!(regs.read(index), 0, "r{index} did not start at zero");
@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn writable_registers_round_trip_their_value() {
-        let mut regs = Regs::new();
+        let mut regs = Regs::RESET;
 
         for index in 1..COUNT {
             regs.write(index, pattern(index));
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn zero_register_ignores_writes() {
-        let mut regs = Regs::new();
+        let mut regs = Regs::RESET;
 
         regs.write(0, u64::MAX);
         regs.write(0, pattern(7));

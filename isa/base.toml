@@ -1,0 +1,37 @@
+[types]
+u64 = 0
+i64 = 1
+u32 = 2
+i32 = 3
+u16 = 4
+i16 = 5
+u8 = 6
+i8 = 7
+f32 = 8
+tf32 = 9
+f16 = 10
+bf16 = 11
+f8e5m2 = 12
+f8e4m3 = 13
+
+[rounding_modes]
+none = 0
+rne = 1
+rtz = 2
+rdn = 3
+rup = 4
+rmm = 5
+
+[[instructions]]
+name = "add"
+assembly = "{name}.gpr.{type}{rounding}{sat} {rd}, {rs1}, {rs2}"
+fields = [
+    { name = "opcode", msb = 63, lsb = 55, value = 0x01 },
+    { name = "type", kind = "type", msb = 54, lsb = 50 },
+    { name = "rounding", kind = "rounding", msb = 49, lsb = 47 },
+    { name = "sat", kind = "bool", msb = 46, lsb = 46 },
+    { name = "rd", kind = "register", msb = 45, lsb = 40 },
+    { name = "rs1", kind = "register", msb = 39, lsb = 34 },
+    { name = "rs2", kind = "register", msb = 33, lsb = 28 },
+    { name = "reserved", msb = 27, lsb = 0, value = 0 },
+]
